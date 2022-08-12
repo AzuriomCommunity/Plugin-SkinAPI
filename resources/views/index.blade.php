@@ -53,7 +53,7 @@
                     <div class="custom-file">
                         <input type="file" class="form-control @error('skin') is-invalid @enderror" id="skin" name="skin" accept=".png" required>
                         <label class="form-label" for="skin" data-browse="{{ trans('messages.actions.browse') }}" id="skinLabel">
-                            {{ trans('messages.actions.choose-file') }}
+                            {{ trans('messages.choose-file') }}
                         </label>
 
                         @error('skin')
