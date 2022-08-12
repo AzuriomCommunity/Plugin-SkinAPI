@@ -8,4 +8,6 @@ return [
     'skin' => 'Skin',
 
     'updated' => 'Your skin has been updated.',
+    
+    'choose-file' => 'Upload new skin file',
 ];
