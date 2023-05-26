@@ -33,4 +33,5 @@ class SkinApiController extends Controller
 
         return redirect()->back()->with('success', trans('skin-api::messages.updated'));
     }
+
 }
