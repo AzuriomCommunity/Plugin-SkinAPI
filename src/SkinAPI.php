@@ -52,12 +52,13 @@ class SkinAPI
         $size = 64;
         $x = 46;
         $y = 30;
-        $image = imagecreatetruecolor($size, $size);
         // Background
+        $image = imagecreatetruecolor($size, $size);
+        $fraction = imagesx($skin) / 8;
         // face
-        imagecopyresampled($image, $skin, 0, 0, 8, 8, $size, $size, 8, 8);
+        imagecopyresampled($image, $skin, 0, 0, $fraction, $fraction, $size, $size, $fraction, $fraction);
         // Add second layer to skin
-        imagecopyresampled($image, $skin, 0, 0, 40, 8, $size, $size, 8, 8);
+        imagecopyresampled($image, $skin, 0, 0, $fraction * 5, $fraction, $size, $size, $fraction, $fraction);
 
         if ($type === 'combo') {
             $head = imagecreate(10, 10);
