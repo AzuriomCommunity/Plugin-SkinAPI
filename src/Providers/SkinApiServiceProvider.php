@@ -6,7 +6,9 @@ use Azuriom\Extensions\Plugin\BasePluginServiceProvider;
 use Azuriom\Models\Permission;
 use Azuriom\Models\User;
 use Azuriom\Plugin\SkinApi\SkinAPI;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Storage;
+use Azuriom\Plugin\SkinApi\Cards\ChangeSkinViewCard;
 
 class SkinApiServiceProvider extends BasePluginServiceProvider
 {
@@ -61,6 +63,8 @@ class SkinApiServiceProvider extends BasePluginServiceProvider
         $this->registerAdminNavigation();
 
         $this->registerUserNavigation();
+        
+        View::composer('profile.index', ChangeSkinViewCard::class);
     }
 
     /**

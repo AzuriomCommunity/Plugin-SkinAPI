@@ -16,6 +16,5 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth')->group(function () {
     Route::get('/', 'SkinApiController@index')->name('home');
-
     Route::post('/update', 'SkinApiController@update')->name('update');
 });
