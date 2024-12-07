@@ -7,6 +7,9 @@ use Azuriom\Models\Permission;
 use Azuriom\Models\User;
 use Azuriom\Plugin\SkinApi\SkinAPI;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\View;
+use Azuriom\Plugin\SkinApi\Cards\ChangeSkinViewCard;
+use Azuriom\Support\SettingsRepository;
 
 class SkinApiServiceProvider extends BasePluginServiceProvider
 {
@@ -50,17 +53,33 @@ class SkinApiServiceProvider extends BasePluginServiceProvider
 
         $this->loadTranslations();
 
-        // $this->loadMigrations();
-
-        Permission::registerPermissions([
-            'skin-api.manage' => 'skin-api::admin.permissions.manage',
-        ]);
+        $this->loadMigrations();
 
         $this->registerRouteDescriptions();
 
         $this->registerAdminNavigation();
 
         $this->registerUserNavigation();
+
+        // Initialize default settings if not set
+        $settings = app(SettingsRepository::class);
+        
+        if (!$settings->has('skin.width')) {
+            $settings->set('skin.width', 64);
+        }
+        if (!$settings->has('skin.height')) {
+            $settings->set('skin.height', 64);
+        }
+        if (!$settings->has('skin.scale')) {
+            $settings->set('skin.scale', 1);
+        }
+
+        Permission::registerPermissions([
+            'admin.skin-api' => 'skin-api::admin.permissions.admin',
+        ]);
+
+        // Register the skin change card in user profile
+        View::composer('profile.index', ChangeSkinViewCard::class);
     }
 
     /**
@@ -89,7 +108,8 @@ class SkinApiServiceProvider extends BasePluginServiceProvider
                 'icon' => 'bi bi-images',
                 'route' => 'skin-api.admin.*',
                 'items' => [
-                    'skin-api.admin.home' => trans('admin.nav.settings.settings'),
+                    'skin-api.admin.skins' => 'Skins',
+                    'skin-api.admin.capes' => 'Capes',
                 ],
                 'permission' => 'skin-api.manage',
             ],
@@ -103,11 +123,26 @@ class SkinApiServiceProvider extends BasePluginServiceProvider
      */
     protected function userNavigation()
     {
-        return [
-            'skin' => [
+        $navigation = [];
+
+        // Add skin navigation if enabled
+        if (setting('skin.show_nav_icon', true)) {
+            $navigation['skin'] = [
                 'route' => 'skin-api.home',
                 'name' => trans('skin-api::messages.title'),
-            ],
-        ];
+                'icon' => setting('skin.navigation_icon', ' '),
+            ];
+        }
+
+        // Add cape navigation if enabled
+        if (setting('skin.cape_show_nav_button', true)) {
+            $navigation['cape'] = [
+                'route' => 'skin-api.capes',
+                'name' => trans('skin-api::messages.capes'),
+                'icon' => setting('skin.cape_nav_icon', ' '),
+            ];
+        }
+
+        return $navigation;
     }
 }

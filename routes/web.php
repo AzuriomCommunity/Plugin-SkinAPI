@@ -1,5 +1,6 @@
 <?php
 
+use Azuriom\Plugin\SkinApi\Controllers\SkinApiController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,8 +15,11 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth')->group(function () {
-    Route::get('/', 'SkinApiController@index')->name('home');
+Route::get('/', [SkinApiController::class, 'index'])->name('home');
 
-    Route::post('/update', 'SkinApiController@update')->name('update');
+Route::middleware('auth')->group(function () {
+    // Cape Management Routes
+    Route::get('/capes', [SkinApiController::class, 'showCape'])->name('capes');
+    Route::post('/capes/upload', [SkinApiController::class, 'uploadCape'])->name('capes.upload');
+    Route::delete('/capes/delete', [SkinApiController::class, 'deleteCape'])->name('capes.delete');
 });

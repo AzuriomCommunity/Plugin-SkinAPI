@@ -29,13 +29,12 @@ class SkinAPI
 
     public static function getRule()
     {
-        $result = '';
-
+        $constraints = [];
         foreach (self::getConstraints() as $key => $value) {
-            $result .= "{$key}={$value},";
+            $constraints[] = "{$key}={$value}";
         }
 
-        return 'dimensions:'.substr($result, 0, -1);
+        return 'dimensions:'.implode(',', $constraints);
     }
 
     /**
