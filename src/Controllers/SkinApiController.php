@@ -155,7 +155,7 @@ class SkinApiController extends Controller
         
         // Add timestamp to cape URL to prevent caching
         $timestamp = $hasCape ? '?t=' . Storage::lastModified('public/capes/' . $user->id . '.png') : '';
-        $capeUrl = $hasCape ? url('/api/skin-api/cape/' . $user->id) . $timestamp : asset('plugins/skin-api/assets/images/no-cape.png');
+        $capeUrl = $hasCape ? url('/api/skin-api/capes/' . $user->id) . $timestamp : asset('plugins/skin-api/assets/images/no-cape.png');
 
         return view('skin-api::capes', [
             'hasCape' => $hasCape,

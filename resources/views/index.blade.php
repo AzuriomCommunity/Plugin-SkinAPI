@@ -43,7 +43,7 @@
 @section('content')
     <div class="card shadow mb-4">
         <div class="card-body">
-            <form action="{{ route('skin-api.update') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('skin-api.skin.update') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
                 <h2>{{ trans('skin-api::messages.change') }}</h2>

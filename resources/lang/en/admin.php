@@ -14,6 +14,7 @@ return [
     ],
 
     'capes' => [
+        'capes' => '1',
         'title' => 'Cape Settings',
         'enable' => 'Enable capes',
         'max_size' => 'Maximum cape file size (KB)',

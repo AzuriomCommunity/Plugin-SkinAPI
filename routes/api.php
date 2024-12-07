@@ -19,4 +19,4 @@ Route::get('/avatars/{type}/{user}', [ApiController::class, 'avatar'])->name('sh
 Route::post('/skins/update', [ApiController::class, 'update'])->name('update');
 
 // Cape routes
-Route::get('/cape/{user}', [ApiController::class, 'showCape'])->name('showCape');
+Route::get('/capes/{user}', [ApiController::class, 'showCape'])->name('showCape');

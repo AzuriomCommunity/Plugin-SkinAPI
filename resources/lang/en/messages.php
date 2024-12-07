@@ -10,7 +10,7 @@ return [
         'error' => 'An error occurred while uploading your skin.',
         'invalid_size' => 'The skin must be exactly :width x :height pixels.',
     ],
-    
+    'capes' => 'My cape',
     'cape' => [
         'title' => 'Cape Management',
         'management' => 'Cape Management',
