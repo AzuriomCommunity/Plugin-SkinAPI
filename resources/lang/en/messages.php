@@ -5,6 +5,11 @@ return [
     'change' => 'Change your skin',
     'skin' => 'Skin',
     'updated' => 'Your skin has been updated.',
+    'upload' => [
+        'success' => 'Skin updated successfully!',
+        'error' => 'An error occurred while uploading your skin.',
+        'invalid_size' => 'The skin must be exactly :width x :height pixels.',
+    ],
     
     'cape' => [
         'title' => 'Cape Management',

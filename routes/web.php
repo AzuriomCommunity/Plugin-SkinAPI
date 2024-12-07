@@ -22,4 +22,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/capes', [SkinApiController::class, 'showCape'])->name('capes');
     Route::post('/capes/upload', [SkinApiController::class, 'uploadCape'])->name('capes.upload');
     Route::delete('/capes/delete', [SkinApiController::class, 'deleteCape'])->name('capes.delete');
+
+    // Skin Management Routes
+    Route::post('/skin/update', [SkinApiController::class, 'updateSkin'])->name('skin.update');
 });

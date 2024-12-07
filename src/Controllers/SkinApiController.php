@@ -19,6 +19,8 @@ class SkinApiController extends Controller
      */
     const DEFAULT_CAPE_WIDTH = 64;
     const DEFAULT_CAPE_HEIGHT = 32;
+    const DEFAULT_SKIN_WIDTH = 64;
+    const DEFAULT_SKIN_HEIGHT = 64;
 
     /**
      * Show the home plugin page.
@@ -88,6 +90,61 @@ class SkinApiController extends Controller
         }
     }
 
+    public function updateSkin(Request $request)
+    {
+        $request->validate([
+            'skin' => ['required', 'file', 'image', 'mimes:png', 'max:2048'],
+        ]);
+
+        try {
+            if (!$request->hasFile('skin') || !$request->file('skin')->isValid()) {
+                $message = trans('skin-api::messages.upload.error');
+                return $request->ajax() 
+                    ? response()->json(['success' => false, 'message' => $message])
+                    : redirect()->back()->with('error', $message);
+            }
+
+            $file = $request->file('skin');
+            $tempPath = $file->getPathname();
+
+            // Validate image dimensions
+            if (!file_exists($tempPath)) {
+                Log::error('Skin upload failed: Temporary file does not exist');
+                $message = trans('skin-api::messages.upload.error');
+                return $request->ajax() 
+                    ? response()->json(['success' => false, 'message' => $message])
+                    : redirect()->back()->with('error', $message);
+            }
+
+            $imageSize = getimagesize($tempPath);
+            if (!$imageSize || $imageSize[0] !== self::DEFAULT_SKIN_WIDTH || $imageSize[1] !== self::DEFAULT_SKIN_HEIGHT) {
+                $message = trans('skin-api::messages.upload.invalid_size', [
+                    'width' => self::DEFAULT_SKIN_WIDTH,
+                    'height' => self::DEFAULT_SKIN_HEIGHT
+                ]);
+                return $request->ajax() 
+                    ? response()->json(['success' => false, 'message' => $message])
+                    : redirect()->back()->with('error', $message);
+            }
+
+            // Save the skin
+            $path = 'public/skins/' . auth()->id() . '.png';
+            Storage::put($path, file_get_contents($tempPath));
+
+            $message = trans('skin-api::messages.upload.success');
+            return $request->ajax() 
+                ? response()->json(['success' => true, 'message' => $message])
+                : redirect()->back()->with('success', $message);
+
+        } catch (\Exception $e) {
+            Log::error('Skin upload failed: ' . $e->getMessage());
+            $message = trans('skin-api::messages.upload.error');
+            return $request->ajax() 
+                ? response()->json(['success' => false, 'message' => $message])
+                : redirect()->back()->with('error', $message);
+        }
+    }
+
     /**
      * Show the cape management page.
      */
@@ -134,7 +191,7 @@ class SkinApiController extends Controller
 
             $imageSize = getimagesize($tempPath);
             if (!$imageSize || $imageSize[0] !== self::DEFAULT_CAPE_WIDTH || $imageSize[1] !== self::DEFAULT_CAPE_HEIGHT) {
-                return redirect()->back()->with('error', trans('skin-api::messages.cape.upload.invalid_size', [
+                return redirect()->back()->with('error', trans('skin-api::messages.cape.upload.dimensions', [
                     'width' => self::DEFAULT_CAPE_WIDTH,
                     'height' => self::DEFAULT_CAPE_HEIGHT
                 ]));
