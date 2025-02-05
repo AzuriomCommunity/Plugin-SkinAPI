@@ -4,70 +4,97 @@
 
 @push('styles')
     <style>
-        #skinPreview {
-            width: 350px;
+        #skinPreview,
+        #capePreview {
+            width: 325px;
             image-rendering: crisp-edges; /* Firefox */
-            image-rendering: pixelated; /* Chrome and Safari */
+            image-rendering: pixelated; /* Chrome/Safari */
         }
     </style>
 @endpush
 
 @push('footer-scripts')
     <script>
-        const skinInput = document.getElementById('skin');
+        document.querySelectorAll('[data-skin-preview]').forEach(function (input) {
+            input.addEventListener('change', function () {
+                if (!input.files || !input.files[0]) {
+                    return;
+                }
 
-        skinInput.addEventListener('change', function () {
-            if (!skinInput.files || !skinInput.files[0]) {
-                return;
-            }
+                const reader = new FileReader();
 
-            const file = skinInput.files[0];
+                reader.onload = function (e) {
+                    const preview = document.getElementById(input.dataset.skinPreview);
+                    preview.src = e.currentTarget.result;
+                    preview.classList.remove('d-none');
+                };
 
-            if (file.name !== undefined && file.name !== '') {
-                document.getElementById('skinLabel').innerText = file.name;
-            }
-
-            const reader = new FileReader();
-
-            reader.onload = function (e) {
-                const preview = document.getElementById('skinPreview');
-                preview.src = e.currentTarget.result;
-                preview.classList.remove('d-none');
-            };
-
-            reader.readAsDataURL(skinInput.files[0]);
-        });
+                reader.readAsDataURL(input.files[0]);
+            });
+        })
     </script>
 @endpush
 
 @section('content')
-    <div class="card shadow mb-4">
+    <div class="card shadow">
         <div class="card-body">
             <form action="{{ route('skin-api.update') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
-                <h2>{{ trans('skin-api::messages.change') }}</h2>
+                <h2>{{ trans('skin-api::messages.title') }}</h2>
 
-                <div class="mb-3">
-                    <label for="skin">{{ trans('skin-api::messages.skin') }}</label>
-                    <div class="custom-file">
-                        <input type="file" class="form-control @error('skin') is-invalid @enderror" id="skin" name="skin" accept=".png" required>
-                        <label class="form-label" for="skin" data-browse="{{ trans('messages.actions.browse') }}" id="skinLabel">
-                            {{ trans('messages.actions.choose_file') }}
-                        </label>
+                <div class="row gx-3">
+                    <div class="@if($capesEnabled) col-md-6 @else col-md-12 @endif mb-3">
+                        <label for="skin">{{ trans('skin-api::messages.skin') }}</label>
+                        <input type="file" class="form-control @error('skin') is-invalid @enderror" id="skin" name="skin" accept="image/png" data-skin-preview="skinPreview">
 
                         @error('skin')
-                            <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
+                        <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
                         @enderror
+
+                        <img src="{{ $skinUrl }}" alt="{{ trans('skin-api::messages.skin') }}" id="skinPreview" class="my-3 img-fluid">
+
+                        @if($hasSkin)
+                            <br>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteSkinModal">
+                                <i class="bi bi-trash"></i> {{ trans('messages.actions.delete') }}
+                            </button>
+                        @endif
                     </div>
 
-                     <img src="{{ $skinUrl }}" alt="{{ trans('skin-api::messages.skin') }}" id="skinPreview" class="mt-3 img-fluid">
+                    @if($capesEnabled)
+                        <div class="col-md-6 mb-3">
+                            <label for="cape">{{ trans('skin-api::messages.cape') }}</label>
+                            <input type="file" class="form-control @error('cape') is-invalid @enderror" id="cape" name="cape" accept="image/png" data-skin-preview="capePreview">
+
+                            @error('cape')
+                            <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
+                            @enderror
+
+                            <img src="{{ $capeUrl ?? '#' }}" alt="{{ trans('skin-api::messages.cape') }}" id="capePreview" class="my-3 img-fluid @if(!$capeUrl) d-none @endif">
+
+                            @if($hasCape)
+                                <br>
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteCapeModal">
+                                    <i class="bi bi-trash"></i> {{ trans('messages.actions.delete') }}
+                                </button>
+                            @endif
+                        </div>
+                    @endif
                 </div>
 
                 <button type="submit" class="btn btn-primary">
-                    {{ trans('messages.actions.save') }}
+                    <i class="bi bi-save"></i> {{ trans('messages.actions.save') }}
                 </button>
             </form>
         </div>
     </div>
+
+    @if($hasSkin)
+        @include('skin-api::profile._skin_modal')
+    @endif
+
+    @if($hasCape)
+        @include('skin-api::profile._cape_modal')
+    @endif
 @endsection

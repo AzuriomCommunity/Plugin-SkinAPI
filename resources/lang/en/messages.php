@@ -2,10 +2,13 @@
 
 return [
     'title' => 'My Skin',
-
-    'change' => 'Change your skin',
-
+    'cape_title' => 'My Cape',
     'skin' => 'Skin',
+    'cape' => 'Cape',
 
-    'updated' => 'Your skin has been updated.',
+    'delete' => [
+        'title' => 'Delete',
+        'skin' => 'Are you sure you want to delete your skin?',
+        'cape' => 'Are you sure you want to delete your cape?',
+    ],
 ];

@@ -1,5 +1,6 @@
 <?php
 
+use Azuriom\Plugin\SkinApi\Controllers\MySkinController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -15,6 +16,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('auth')->group(function () {
-    Route::get('/', 'SkinApiController@index')->name('home');
-    Route::post('/update', 'SkinApiController@update')->name('update');
+    Route::get('/', [MySkinController::class, 'index'])->name('home');
+
+    Route::post('/', [MySkinController::class, 'updateSkinCape'])->name('update');
+    Route::delete('/skin', [MySkinController::class, 'deleteSkin'])->name('skin.delete');
+    Route::delete('/cape', [MySkinController::class, 'deleteCape'])->name('cape.delete');
 });

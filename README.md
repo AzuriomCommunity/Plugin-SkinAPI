@@ -1,21 +1,42 @@
-## API
-GET `/api/skin-api/skins/{user_id or nickname}`
+# Skin API
 
-GET `/api/skin-api/avatars/combo/{user_id or nickname}`
+Give your players the ability to change their skin and/or cape.
 
-GET `/api/skin-api/avatars/face/{user_id or nickname}`
+## AzLink with SkinsRestorer
 
-POST `/api/skins/update_skin`
+The skin can automatically be applied in-game, when using Azlink with
+[SkinsRestorer](https://skinsrestorer.net/).
 
-The POST route require 2 parameters :
-`{ "access_token" : "XXXX", "skin" : "IMAGE.PNG" }
+In the `config.yml` of AzLink, set `skinrestorer-integration` to `true`.
 
-The user, if connected, can update his skin if he navigates to `/skin-api`
+## Endpoints
 
-### Player skins via Azlink
+### Skin
 
-With Azlink, in the config.yml, you can set the `skinrestorer-integration` to `true` to automatically apply player's skins
+**GET** `/api/skin-api/skins/{user_id|user_name}`
+Returns the skin layout of the given user.
 
-### Player skins via KataSkinApi (SkinRestorer)
-You can also use the plugin [https://www.spigotmc.org/resources/kataskinapi.110210/](https://www.spigotmc.org/resources/kataskinapi.110210/) 
-to automatically apply player's skins **if you are not using Azlink.**
+**GET** `/api/skin-api/avatars/face/{user_id|user_name}`
+Returns the avatar (face) of the give user.
+
+**GET** `/api/skin-api/avatars/combo/{user_id|user_name}`
+Returns the avatar, with the skin body on top, of the given user.
+
+**POST** `/api/skins/update_skin`
+| Parameter      | Type      | Description             |
+| -------------- | --------- | ----------------------- |
+| `access_token` | string    | The user's access token |
+| `skin`         | image/png | The skin layout         |
+
+### Cape
+
+Capes must be enabled in the Admin Dashboard in order to be in use.
+
+**GET** `/api/skin-api/capes/{user_id|user_name}`
+Returns the cape of the given user.
+
+**POST** `/api/skins/update_skin`
+| Parameter      | Type      | Description             |
+| -------------- | --------- | ----------------------- |
+| `access_token` | string    | The user's access token |
+| `cape`         | image/png | The cape file           |

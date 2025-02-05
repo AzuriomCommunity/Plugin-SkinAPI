@@ -3,50 +3,51 @@
 namespace Azuriom\Plugin\SkinApi\Providers;
 
 use Azuriom\Extensions\Plugin\BasePluginServiceProvider;
+use Azuriom\Games\Minecraft\MinecraftOfflineGame;
 use Azuriom\Models\Permission;
 use Azuriom\Models\User;
+use Azuriom\Plugin\SkinApi\Cards\ChangeSkinCapeCard;
+use Azuriom\Plugin\SkinApi\Render\RenderType;
 use Azuriom\Plugin\SkinApi\SkinAPI;
-use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Storage;
-use Azuriom\Plugin\SkinApi\Cards\ChangeSkinViewCard;
+use Illuminate\Support\Facades\View;
 
 class SkinApiServiceProvider extends BasePluginServiceProvider
 {
     /**
      * Register any plugin services.
-     *
-     * @return void
      */
-    public function register()
+    public function register(): void
     {
-        // Due to the "random" order of ServiceProvider boot
-        // we need to make sure that the GameServiceProvider has booted
-        // thus after the app is booted.
-        $this->app->booted(function ($app): void {
-            if (game()->id() === 'mc-offline') {
-                game()->setAvatarRetriever(function (User $user, int $size = 64) {
-                    if (! Storage::disk('public')->exists("skins/{$user->id}.png")) {
-                        return plugin_asset('skin-api', 'img/face_steve.png');
-                    }
+        MinecraftOfflineGame::setAvatarRetriever(function (User $user, int $size = 64) {
+            $userId = $user->id;
 
-                    // if the avatar does not exist or the skin is more recent than the avatar
-                    if (! Storage::disk('public')->exists("face/{$user->id}.png")
-                        || Storage::disk('public')->lastModified("skins/{$user->id}.png") > Storage::disk('public')->lastModified("face/{$user->id}.png")) {
-                        SkinAPI::makeAvatarWithTypeForUser('face', $user->id);
-                    }
+            if (! Storage::disk('public')->exists("skins/{$user->id}.png")) {
+                if (SkinAPI::defaultSkin() === null) {
+                    return plugin_asset('skin-api', 'img/face_steve.png');
+                }
 
-                    return url(Storage::disk('public')->url("face/{$user->id}.png"));
-                });
+                $userId = 'default';
+             }
+
+            $lastModified = Storage::disk('public')->lastModified("skins/{$userId}.png");
+
+            // if the avatar does not exist or the skin is more recent than the avatar
+            if (! Storage::disk('public')->exists("face/{$userId}.png")
+                || $lastModified > Storage::disk('public')->lastModified("face/{$userId}.png")) {
+                SkinAPI::makeAvatarWithTypeForUser(RenderType::AVATAR, $userId);
             }
+
+            $hash = $lastModified ? '?h='.substr($lastModified, 4) : '';
+
+            return url(Storage::disk('public')->url("face/{$userId}.png{$hash}"));
         });
     }
 
     /**
      * Bootstrap any plugin services.
-     *
-     * @return void
      */
-    public function boot()
+    public function boot(): void
     {
         $this->loadViews();
 
@@ -54,25 +55,24 @@ class SkinApiServiceProvider extends BasePluginServiceProvider
 
         // $this->loadMigrations();
 
-        Permission::registerPermissions([
-            'skin-api.manage' => 'skin-api::admin.permissions.manage',
-        ]);
-
         $this->registerRouteDescriptions();
 
         $this->registerAdminNavigation();
 
         $this->registerUserNavigation();
-        
-        View::composer('profile.index', ChangeSkinViewCard::class);
+
+        Permission::registerPermissions([
+            'skin-api.cape' => 'skin-api::admin.permissions.cape',
+            'admin.skin-api' => 'skin-api::admin.permissions.admin',
+        ]);
+
+        View::composer('profile.index', ChangeSkinCapeCard::class);
     }
 
     /**
      * Returns the routes that should be able to be added to the navbar.
-     *
-     * @return array
      */
-    protected function routeDescriptions()
+    protected function routeDescriptions(): array
     {
         return [
             'skin-api.home' => trans('skin-api::messages.title'),
@@ -81,19 +81,18 @@ class SkinApiServiceProvider extends BasePluginServiceProvider
 
     /**
      * Return the admin navigations routes to register in the dashboard.
-     *
-     * @return array
      */
-    protected function adminNavigation()
+    protected function adminNavigation(): array
     {
         return [
             'skin-api' => [
-                'name' => 'Skin-Api',
+                'name' => 'Skin API',
                 'type' => 'dropdown',
-                'icon' => 'bi bi-images',
+                'icon' => 'bi bi-person-square',
                 'route' => 'skin-api.admin.*',
                 'items' => [
-                    'skin-api.admin.home' => trans('admin.nav.settings.settings'),
+                    'skin-api.admin.skins' => trans('skin-api::admin.skins'),
+                    'skin-api.admin.capes' => trans('skin-api::admin.capes'),
                 ],
                 'permission' => 'skin-api.manage',
             ],
@@ -102,15 +101,14 @@ class SkinApiServiceProvider extends BasePluginServiceProvider
 
     /**
      * Return the user navigations routes to register in the user menu.
-     *
-     * @return array
      */
-    protected function userNavigation()
+    protected function userNavigation(): array
     {
         return [
             'skin' => [
                 'route' => 'skin-api.home',
                 'name' => trans('skin-api::messages.title'),
+                'icon' => 'bi bi-person-square',
             ],
         ];
     }

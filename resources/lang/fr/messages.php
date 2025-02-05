@@ -1,11 +1,14 @@
 <?php
 
 return [
-    'title' => 'Mon skin',
-
-    'change' => 'Changer de skin',
-
+    'title' => 'Mon Skin',
+    'cape_title' => 'Ma Cape',
     'skin' => 'Skin',
+    'cape' => 'Cape',
 
-    'updated' => 'Votre skin a bien été changé.',
+    'delete' => [
+        'title' => 'Supprimer',
+        'skin' => 'Êtes vous sûr de vouloir supprimer votre skin ?',
+        'cape' => 'Êtes vous sûr de vouloir supprimer votre cape ?',
+    ],
 ];

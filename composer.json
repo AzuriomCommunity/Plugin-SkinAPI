@@ -1,7 +1,7 @@
 {
     "name": "azuriom/skin-api",
     "type": "azuriom-plugin",
-    "description": "Plugin for Azuriom",
+    "description": "Give your players the ability to change their skin and/or cape.",
     "autoload": {
         "psr-4": {
             "Azuriom\\Plugin\\SkinApi\\": "src/"
