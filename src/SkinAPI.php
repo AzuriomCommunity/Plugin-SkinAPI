@@ -59,25 +59,54 @@ class SkinAPI
     /**
      * Code from https://github.com/scholtzm/php-minecraft-avatars
      *
+     * With modification for HD Skins by Gru and DeepSeek :)
+     *
      * @license MIT
      * @author Michael Scholtz
      */
     public static function makeAvatarWithTypeForUser(RenderType $type, string $user): void
     {
         abort_unless(extension_loaded('gd'), 403, 'Please enable the GD extension in your php.ini');
-
-        $skin = imagecreatefrompng(Storage::disk('public')->path("skins/{$user}.png"));
+    
+        $skinPath = Storage::disk('public')->path("skins/{$user}.png");
+        $skin = imagecreatefrompng($skinPath);
+        
+        $skinWidth = imagesx($skin);
+        $skinHeight = imagesy($skin);
+        
+        $scale = $skinWidth / 64;
         $size = 64;
+        
         $x = 46;
         $y = 30;
         $image = imagecreatetruecolor($size, $size);
-
+        imagesavealpha($image, true);
+        $transparent = imagecolorallocatealpha($image, 0, 0, 0, 127);
+        imagefill($image, 0, 0, $transparent);
+    
+        // function of scaling params
+        $s = function ($value) use ($scale) {
+            return $value * $scale;
+        };
+    
         // Background
-        // face
-        imagecopyresampled($image, $skin, 0, 0, 8, 8, $size, $size, 8, 8);
-        // Add second layer to skin
-        imagecopyresampled($image, $skin, 0, 0, 40, 8, $size, $size, 8, 8);
-
+        // Face layer
+        imagecopyresampled(
+            $image, $skin, 
+            0, 0, 
+            $s(8), $s(8), 
+            $size, $size, 
+            $s(8), $s(8)
+        );
+        // Second layer
+        imagecopyresampled(
+            $image, $skin, 
+            0, 0, 
+            $s(40), $s(8), 
+            $size, $size, 
+            $s(8), $s(8)
+        );
+    
         if ($type === RenderType::COMBO) {
             $head = imagecreate(10, 10);
             $white = imagecolorallocate($head, 255, 255, 255);
@@ -97,27 +126,66 @@ class SkinAPI
             imagecolordeallocate($legs, $white);
             imagedestroy($legs);
             // white shadow - end
-
+    
             // Foreground
-            // face
-            imagecopyresampled($image, $skin, $x + 4, $y, 8, 8, 8, 8, 8, 8);
-            // body
-            imagecopyresampled($image, $skin, $x + 4, $y + 8, 20, 20, 8, 12, 8, 12);
-            // left arm
-            imagecopyresampled($image, $skin, $x, $y + 8, 44, 20, 4, 12, 4, 12);
-            // right arm - must FLIP
-            imagecopyresampled($image, $skin, $x + 12, $y + 8, 47, 20, 4, 12, -4, 12);
-            // left leg
-            imagecopyresampled($image, $skin, $x + 4, $y + 20, 4, 20, 4, 12, 4, 12);
-            // right leg - must FLIP
-            imagecopyresampled($image, $skin, $x + 8, $y + 20, 7, 20, 4, 12, -4, 12);
-            imagesavealpha($image, true);
+            // Face
+            imagecopyresampled(
+                $image, $skin, 
+                $x + 4, $y, 
+                $s(8), $s(8), 
+                8, 8, 
+                $s(8), $s(8)
+            );
+            // Body
+            imagecopyresampled(
+                $image, $skin, 
+                $x + 4, $y + 8, 
+                $s(20), $s(20), 
+                8, 12, 
+                $s(8), $s(12)
+            );
+            // Left arm
+            imagecopyresampled(
+                $image, $skin, 
+                $x, $y + 8, 
+                $s(44), $s(20), 
+                4, 12, 
+                $s(4), $s(12)
+            );
+            // Right arm (flipped)
+            imagecopyresampled(
+                $image, $skin, 
+                $x + 12, $y + 8, 
+                $s(47), $s(20), 
+                4, 12, 
+                -$s(4), $s(12)
+            );
+            // Left leg
+            imagecopyresampled(
+                $image, $skin, 
+                $x + 4, $y + 20, 
+                $s(4), $s(20), 
+                4, 12, 
+                $s(4), $s(12)
+            );
+            // Right leg (flipped)
+            imagecopyresampled(
+                $image, $skin, 
+                $x + 8, $y + 20, 
+                $s(7), $s(20), 
+                4, 12, 
+                -$s(4), $s(12)
+            );
         }
-
+    
         if (! file_exists($dir_path = Storage::disk('public')->path($type->value))) {
             mkdir($dir_path, 0755, true);
         }
-
+    
         imagepng($image, Storage::disk('public')->path("{$type->value}/{$user}.png"));
+        
+        // release resources
+        imagedestroy($skin);
+        imagedestroy($image);
     }
 }
