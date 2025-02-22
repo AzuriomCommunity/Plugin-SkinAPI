@@ -9,7 +9,7 @@ Route::get('/skins/{user}', [ApiController::class, 'skin']);
 Route::get('/avatars/{type}/{user}.png', [ApiController::class, 'avatar'])->name('showAvatar');
 Route::get('/avatars/{type}/{user}', [ApiController::class, 'avatar']);
 Route::post('/skins', [ApiController::class, 'updateSkin'])->name('update');
-Route::post('/skins/update', [ApiController::class, 'updateSkin'])->name('update');
+Route::post('/skins/update', [ApiController::class, 'updateSkin']);
 Route::delete('/skins', [ApiController::class, 'deleteSkin'])->name('delete');
 
 // Capes
