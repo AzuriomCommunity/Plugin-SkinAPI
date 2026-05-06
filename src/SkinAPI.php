@@ -57,7 +57,7 @@ class SkinAPI
     }
 
     /**
-     * Code from https://github.com/scholtzm/php-minecraft-avatars
+     * Code from https://github.com/scholtzm/php-minecraft-avatars, modified by gru2007.
      *
      * @license MIT
      * @author Michael Scholtz
@@ -66,19 +66,34 @@ class SkinAPI
     {
         abort_unless(extension_loaded('gd'), 403, 'Please enable the GD extension in your php.ini');
 
-        $skin = imagecreatefrompng(Storage::disk('public')->path("skins/{$user}.png"));
+        $skinPath = Storage::disk('public')->path("skins/{$user}.png");
+        $skin = imagecreatefrompng($skinPath);
+
+        $skinWidth = imagesx($skin);
+        $scale = $skinWidth / 64;
+
         $size = 64;
         $x = 46;
         $y = 30;
         $image = imagecreatetruecolor($size, $size);
 
-        // Background
-        // face
-        imagecopyresampled($image, $skin, 0, 0, 8, 8, $size, $size, 8, 8);
-        // Add second layer to skin
-        imagecopyresampled($image, $skin, 0, 0, 40, 8, $size, $size, 8, 8);
+        if ($type === RenderType::COMBO) {
+            imagealphablending($image, false);
+            imagesavealpha($image, true);
+            $transparent = imagecolorallocatealpha($image, 0, 0, 0, 127);
+            imagefill($image, 0, 0, $transparent);
+            imagealphablending($image, true);
+        }
+
+        // Scale helper: maps a 64px-skin coordinate to the actual skin coordinate
+        $s = fn (int $value) => (int) round($value * $scale);
+
+        // Background — face base layer + hat/overlay layer
+        imagecopyresampled($image, $skin, 0, 0, $s(8), $s(8), $size, $size, $s(8), $s(8));
+        imagecopyresampled($image, $skin, 0, 0, $s(40), $s(8), $size, $size, $s(8), $s(8));
 
         if ($type === RenderType::COMBO) {
+            // White shadow regions (destination-space, no scaling needed)
             $head = imagecreate(10, 10);
             $white = imagecolorallocate($head, 255, 255, 255);
             imagecopyresampled($image, $head, $x + 3, $y - 1, 0, 0, 10, 10, 10, 10);
@@ -96,22 +111,34 @@ class SkinAPI
             imagecopyresampled($image, $legs, $x + 3, $y + 19, 0, 0, 10, 14, 10, 14);
             imagecolordeallocate($legs, $white);
             imagedestroy($legs);
-            // white shadow - end
 
             // Foreground
-            // face
-            imagecopyresampled($image, $skin, $x + 4, $y, 8, 8, 8, 8, 8, 8);
-            // body
-            imagecopyresampled($image, $skin, $x + 4, $y + 8, 20, 20, 8, 12, 8, 12);
-            // left arm
-            imagecopyresampled($image, $skin, $x, $y + 8, 44, 20, 4, 12, 4, 12);
-            // right arm - must FLIP
-            imagecopyresampled($image, $skin, $x + 12, $y + 8, 47, 20, 4, 12, -4, 12);
-            // left leg
-            imagecopyresampled($image, $skin, $x + 4, $y + 20, 4, 20, 4, 12, 4, 12);
-            // right leg - must FLIP
-            imagecopyresampled($image, $skin, $x + 8, $y + 20, 7, 20, 4, 12, -4, 12);
-            imagesavealpha($image, true);
+            // Face
+            imagecopyresampled($image, $skin, $x + 4, $y, $s(8), $s(8), 8, 8, $s(8), $s(8));
+            // Body base
+            imagecopyresampled($image, $skin, $x + 4, $y + 8, $s(20), $s(20), 8, 12, $s(8), $s(12));
+            // Body overlay
+            imagecopyresampled($image, $skin, $x + 4, $y + 8, $s(20), $s(36), 8, 12, $s(8), $s(12));
+
+            // Left arm base
+            imagecopyresampled($image, $skin, $x, $y + 8, $s(44), $s(20), 4, 12, $s(4), $s(12));
+            // Left arm overlay
+            imagecopyresampled($image, $skin, $x, $y + 8, $s(44), $s(36), 4, 12, $s(4), $s(12));
+
+            // Right arm base (flipped)
+            imagecopyresampled($image, $skin, $x + 12, $y + 8, $s(48) - 1, $s(20), 4, 12, -$s(4), $s(12));
+            // Right arm overlay (flipped)
+            imagecopyresampled($image, $skin, $x + 12, $y + 8, $s(48) - 1, $s(36), 4, 12, -$s(4), $s(12));
+
+            // Left leg base
+            imagecopyresampled($image, $skin, $x + 4, $y + 20, $s(4), $s(20), 4, 12, $s(4), $s(12));
+            // Left leg overlay
+            imagecopyresampled($image, $skin, $x + 4, $y + 20, $s(4), $s(36), 4, 12, $s(4), $s(12));
+
+            // Right leg base (flipped)
+            imagecopyresampled($image, $skin, $x + 8, $y + 20, $s(8) - 1, $s(20), 4, 12, -$s(4), $s(12));
+            // Right leg overlay (flipped)
+            imagecopyresampled($image, $skin, $x + 8, $y + 20, $s(8) - 1, $s(36), 4, 12, -$s(4), $s(12));
         }
 
         if (! file_exists($dir_path = Storage::disk('public')->path($type->value))) {
@@ -119,5 +146,8 @@ class SkinAPI
         }
 
         imagepng($image, Storage::disk('public')->path("{$type->value}/{$user}.png"));
+
+        imagedestroy($skin);
+        imagedestroy($image);
     }
 }
