@@ -1,7 +1,7 @@
 <?php
 
 use Azuriom\Plugin\SkinApi\Controllers\Api\ApiController;
-use Azuriom\Plugin\SkinApi\Controllers\TextureJsonController;
+use Azuriom\Plugin\SkinApi\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 // Skins
@@ -19,5 +19,5 @@ Route::get('/capes/{user}', [ApiController::class, 'cape']);
 Route::post('/capes', [ApiController::class, 'updateCape'])->name('capes.update');
 Route::delete('/capes', [ApiController::class, 'deleteCape'])->name('capes.delete');
 
-// Json Provider
-Route::get('/textures/{username}', [TextureJsonController::class, 'handle']);
+// JSON profile
+Route::get('/profile/{username}', [ProfileController::class, 'show'])->name('profile');
