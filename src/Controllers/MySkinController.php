@@ -3,9 +3,11 @@
 namespace Azuriom\Plugin\SkinApi\Controllers;
 
 use Azuriom\Http\Controllers\Controller;
+use Azuriom\Plugin\SkinApi\Models\Cape;
+use Azuriom\Plugin\SkinApi\Models\Skin;
+use Azuriom\Plugin\SkinApi\Render\AvatarRenderer;
 use Azuriom\Plugin\SkinApi\SkinAPI;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class MySkinController extends Controller
 {
@@ -14,13 +16,15 @@ class MySkinController extends Controller
      */
     public function index(Request $request)
     {
-        $skin = SkinAPI::skinUrl($request->user()->id);
-        $cape = SkinAPI::skinUrl($request->user()->id, true);
+        $user = $request->user();
+        $skin = Skin::forUser($request->user()->id);
+        $cape = Cape::forUser($request->user()->id);
 
         return view('skin-api::index', [
-            'capesEnabled' => setting('skin.capes.enable', false),
-            'skinUrl' => $skin ?? (SkinAPI::defaultSkin() ?? plugin_asset('skin-api', 'img/steve.png')),
-            'capeUrl' => $cape,
+            'canUploadSkin' => $user->can('skin-api.skin'),
+            'canUploadCape' => setting('skin.capes.enable', false) && $user->can('skin-api.cape'),
+            'skinUrl' => $skin?->imageUrl() ?? SkinAPI::defaultSkin(),
+            'capeUrl' => $cape?->imageUrl(),
             'hasSkin' => $skin !== null,
             'hasCape' => $cape !== null,
         ]);
@@ -31,40 +35,51 @@ class MySkinController extends Controller
      */
     public function updateSkinCape(Request $request)
     {
+        $user = $request->user();
+
+        abort_if(! $user->can('skin-api.skin') && ! $user->can('skin-api.cape'), 403);
+
         $this->validate($request, [
             'skin' => ['nullable', 'mimes:png', SkinAPI::getRule()],
             'cape' => ['nullable', 'mimes:png', SkinAPI::getRule(true)],
         ]);
 
-        if ($request->hasFile('skin')) {
-            $request->file('skin')->storeAs('skins', "{$request->user()->id}.png", 'public');
+        if ($request->hasFile('skin') && $user->can('skin-api.skin')) {
+            $file = $request->file('skin');
+
+            Skin::firstOrNew(['user_id' => $user->id])->fill([
+                'sha256' => hash_file('sha256', $file->getPathname()),
+                'slim' => AvatarRenderer::isSlimSkin($file->getPathname()),
+            ])->storeImage($file, save: true);
         }
 
-        if ($request->hasFile('cape') && setting('skin.capes.enable', false)) {
-            $request->file('cape')->storeAs('skins/capes', "{$request->user()->id}.png", 'public');
+        if ($request->hasFile('cape') && $user->can('skin-api.cape') && setting('skin.capes.enable', false)) {
+            $file = $request->file('cape');
+
+            Cape::firstOrNew(['user_id' => $user->id])->fill([
+                'sha256' => hash_file('sha256', $file->getPathname()),
+            ])->storeImage($file, save: true);
         }
 
         return redirect()->back()->with('success', trans('messages.status.success'));
     }
 
+    /**
+     * Delete the skin for the currently authenticated user.
+     */
     public function deleteSkin(Request $request)
     {
-        $skinPath = "skins/{$request->user()->id}.png";
-
-        if (Storage::disk('public')->exists($skinPath)) {
-            Storage::disk('public')->delete($skinPath);
-        }
+        Skin::forUser($request->user()->id)?->delete();
 
         return redirect()->back()->with('success', trans('messages.status.success'));
     }
 
+    /**
+     * Delete the cape for the currently authenticated user.
+     */
     public function deleteCape(Request $request)
     {
-        $capePath = "skins/capes/{$request->user()->id}.png";
-
-        if (Storage::disk('public')->exists($capePath)) {
-            Storage::disk('public')->delete($capePath);
-        }
+        Cape::forUser($request->user()->id)?->delete();
 
         return redirect()->back()->with('success', trans('messages.status.success'));
     }

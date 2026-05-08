@@ -44,7 +44,7 @@
                 <h2>{{ trans('skin-api::messages.title') }}</h2>
 
                 <div class="row gx-3">
-                    <div class="@if($capesEnabled) col-md-6 @else col-md-12 @endif mb-3">
+                    <div class="@if($canUploadCape) col-md-6 @else col-md-12 @endif mb-3">
                         <label for="skin">{{ trans('skin-api::messages.skin') }}</label>
                         <input type="file" class="form-control @error('skin') is-invalid @enderror" id="skin" name="skin" accept="image/png" data-skin-preview="skinPreview">
 
@@ -62,7 +62,7 @@
                         @endif
                     </div>
 
-                    @if($capesEnabled)
+                    @if($canUploadCape)
                         <div class="col-md-6 mb-3">
                             <label for="cape">{{ trans('skin-api::messages.cape') }}</label>
                             <input type="file" class="form-control @error('cape') is-invalid @enderror" id="cape" name="cape" accept="image/png" data-skin-preview="capePreview">

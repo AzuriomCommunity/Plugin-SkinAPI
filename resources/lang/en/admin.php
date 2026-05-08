@@ -25,6 +25,7 @@ return [
     ],
 
     'permissions' => [
+        'skin' => 'Upload a skin',
         'cape' => 'Upload a cape',
         'manage' => 'Manage skins and capes settings',
     ],

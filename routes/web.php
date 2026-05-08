@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('auth')->group(function () {
-    Route::get('/', [MySkinController::class, 'index'])->name('home');
+    Route::get('/', [MySkinController::class, 'index'])->name('home')->middleware('can:skin-api.skin');
 
     Route::post('/', [MySkinController::class, 'updateSkinCape'])->name('update');
     Route::delete('/skin', [MySkinController::class, 'deleteSkin'])->name('skin.delete');

@@ -1,7 +1,7 @@
 <?php
 
 use Azuriom\Plugin\SkinApi\Controllers\Api\ApiController;
-use Azuriom\Plugin\SkinApi\Controllers\ProfileController;
+use Azuriom\Plugin\SkinApi\Controllers\Api\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 // Skins
@@ -20,4 +20,4 @@ Route::post('/capes', [ApiController::class, 'updateCape'])->name('capes.update'
 Route::delete('/capes', [ApiController::class, 'deleteCape'])->name('capes.delete');
 
 // JSON profile
-Route::get('/profile/{username}', [ProfileController::class, 'show'])->name('profile');
+Route::get('/profile/{user}', [ProfileController::class, 'show'])->name('profile');

@@ -19,7 +19,10 @@ All endpoints can optionally end with `.png`.
 Returns the skin layout of the given user.
 
 **GET** `/api/skin-api/avatars/face/{user_id|user_name}`
-Returns the avatar (face) of the give user.
+Returns the avatar (face) of the given user.
+
+**GET** `/api/skin-api/avatars/body/{user_id|user_name}`
+Returns the body of the given user.
 
 **GET** `/api/skin-api/avatars/combo/{user_id|user_name}`
 Returns the avatar, with the skin body on top, of the given user.
