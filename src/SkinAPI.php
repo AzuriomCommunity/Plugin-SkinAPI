@@ -2,8 +2,8 @@
 
 namespace Azuriom\Plugin\SkinApi;
 
+use Azuriom\Plugin\SkinApi\Models\Skin;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 class SkinAPI
@@ -138,57 +138,19 @@ class SkinAPI
     public static function getUserSkinType(int $userId): bool
     {
         try {
-            if (!Schema::hasTable('skin_types')) {
+            $skin = Skin::forUser($userId);
+            if ($skin !== null) {
+                return $skin->slim;
+            }
+
+            $skinPath = Storage::disk('public')->path("skins/{$userId}.png");
+            if (! file_exists($skinPath)) {
                 return false;
             }
 
-            $skinType = \Azuriom\Plugin\SkinApi\Models\SkinType::firstWhere('user_id', $userId);
-            
-            if ($skinType === null) {
-                $skinPath = Storage::disk('public')->path("skins/{$userId}.png");
-                
-                if (!file_exists($skinPath)) {
-                    return false;
-                }
-
-                $isSlim = self::isSkinSlim($skinPath);
-                self::updateUserSkinType($userId, $isSlim);
-                return $isSlim;
-            }
-            
-            return $skinType->is_slim;
+            return self::isSkinSlim($skinPath);
         } catch (\Exception $e) {
             return false;
-        }
-    }
-
-    /**
-     * Update the skin type for a user
-     *
-     * @param int $userId
-     * @param bool $isSlim
-     * @return void
-     */
-    public static function updateUserSkinType(int $userId, bool $isSlim): void
-    {
-        try {
-            if (!Schema::hasTable('skin_types')) {
-                throw new \Exception('Table skin_types does not exist');
-            }
-
-            $existing = \Azuriom\Plugin\SkinApi\Models\SkinType::where('user_id', $userId)->first();
-
-            if ($existing) {
-                $existing->is_slim = $isSlim;
-                $existing->save();
-            } else {
-                $new = new \Azuriom\Plugin\SkinApi\Models\SkinType();
-                $new->user_id = $userId;
-                $new->is_slim = $isSlim;
-                $new->save();
-            }
-        } catch (\Exception $e) {
-            throw $e;
         }
     }
 }
