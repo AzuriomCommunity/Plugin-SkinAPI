@@ -8,11 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('skin_types')) {
+            return;
+        }
+
         Schema::create('skin_types', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->unique()->constrained()->onDelete('cascade');
+            $table->unsignedInteger('user_id')->unique();
             $table->boolean('is_slim')->default(false);
             $table->timestamps();
+
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
         });
     }
 

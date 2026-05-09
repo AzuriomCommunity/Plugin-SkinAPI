@@ -7,9 +7,11 @@ use Azuriom\Games\Minecraft\MinecraftOfflineGame;
 use Azuriom\Models\Permission;
 use Azuriom\Models\User;
 use Azuriom\Plugin\SkinApi\Cards\ChangeSkinCapeCard;
+use Azuriom\Plugin\SkinApi\Http\Middleware\MergeSkinSlimIntoAuthApiResponse;
 use Azuriom\Plugin\SkinApi\Models\Skin;
 use Azuriom\Plugin\SkinApi\Render\AvatarRenderer;
 use Azuriom\Plugin\SkinApi\Render\RenderType;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
 
@@ -46,6 +48,9 @@ class SkinApiServiceProvider extends BasePluginServiceProvider
      */
     public function boot(): void
     {
+        $kernel = $this->app->make(Kernel::class);
+        $kernel->appendMiddlewareToGroup('api', MergeSkinSlimIntoAuthApiResponse::class);
+
         $this->loadViews();
 
         $this->loadTranslations();
