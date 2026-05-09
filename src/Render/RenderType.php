@@ -6,4 +6,5 @@ enum RenderType: string
 {
     case AVATAR = 'face';
     case COMBO = 'combo';
+    case BODY = 'body';
 }

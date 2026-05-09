@@ -4,6 +4,9 @@ namespace Azuriom\Plugin\SkinApi\Controllers\Api;
 
 use Azuriom\Http\Controllers\Controller;
 use Azuriom\Models\User;
+use Azuriom\Plugin\SkinApi\Models\Cape;
+use Azuriom\Plugin\SkinApi\Models\Skin;
+use Azuriom\Plugin\SkinApi\Render\AvatarRenderer;
 use Azuriom\Plugin\SkinApi\Render\RenderType;
 use Azuriom\Plugin\SkinApi\SkinAPI;
 use Illuminate\Http\Request;
@@ -12,13 +15,14 @@ use Illuminate\Support\Facades\Storage;
 class ApiController extends Controller
 {
     /**
-     * Return the original skin of the user.
+     * Return the original skin PNG for a user (by numeric ID or username).
      */
     public function skin(string $user)
     {
         $userId = is_numeric($user) ? (int) $user : User::where('name', $user)->value('id');
+        $skin = $userId ? Skin::forUser($userId) : null;
 
-        if ($userId === null || ! Storage::disk('public')->exists("skins/{$userId}.png")) {
+        if ($skin === null) {
             if (setting('skin.not_found_handling') === '404_status') {
                 return response()->json([
                     'error' => 'Not found',
@@ -26,28 +30,28 @@ class ApiController extends Controller
                 ], 404);
             }
 
-            if (SkinAPI::defaultSkin() === null) {
-                return response()->file(plugins()->path('skin-api', 'assets/img/steve.png'), [
-                    'Content-Type' => 'image/png',
-                    'Cache-Control' => 'no-cache',
-                ]);
-            }
+            SkinAPI::ensureDefaultSkin();
 
-            $userId = 'default';
+            return Storage::disk('public')->response('skins/default.png', 'skin.png', [
+                'Content-Type' => 'image/png',
+                'Cache-Control' => 'no-cache',
+            ]);
         }
 
-        return Storage::disk('public')->response("skins/{$userId}.png", 'skin.png', [
+        return $skin->getDisk()->response($skin->getPath(), 'skin.png', [
             'Content-Type' => 'image/png',
             'Cache-Control' => 'no-cache',
         ]);
     }
 
     /**
-     * Return the avatar of the user.
+     * Return a rendered avatar PNG (type: "face" or "combo") for a user.
      */
     public function avatar(string $type, string $user)
     {
-        if ($type !== 'combo' && $type !== 'face') {
+        $renderType = RenderType::tryFrom($type);
+
+        if ($renderType === null) {
             return response()->json([
                 'error' => 'Invalid type',
                 'message' => 'The avatar type must be "combo" or "face".',
@@ -55,8 +59,10 @@ class ApiController extends Controller
         }
 
         $userId = is_numeric($user) ? (int) $user : User::where('name', $user)->value('id');
+        $skin = $userId ? Skin::forUser($userId) : null;
+        $disk = Storage::disk('public');
 
-        if ($userId === null || ! Storage::disk('public')->exists("skins/{$userId}.png")) {
+        if ($skin === null) {
             if (setting('skin.not_found_handling') === '404_status') {
                 return response()->json([
                     'error' => 'Not found',
@@ -64,29 +70,34 @@ class ApiController extends Controller
                 ], 404);
             }
 
-            if (SkinAPI::defaultSkin() === null) {
-                return response()->file(plugins()->path('skin-api', "assets/img/{$type}_steve.png"), [
+            if ($disk->exists("skins/{$type}/default.png")) {
+                return $disk->response("skins/{$type}/default.png", "{$type}.png", [
                     'Content-Type' => 'image/png',
-                    'Cache-Control' => 'no-cache',
                 ]);
             }
 
-            $userId = 'default';
+            return response()->file(plugins()->path('skin-api', "assets/img/{$type}_steve.png"), [
+                'Content-Type' => 'image/png',
+                'Cache-Control' => 'no-cache',
+            ]);
         }
 
-        // if the avatar does not exist or the skin is more recent than the avatar
-        if (! Storage::disk('public')->exists("{$type}/{$userId}.png")
-            || Storage::disk('public')->lastModified("skins/{$userId}.png") > Storage::disk('public')->lastModified("{$type}/{$userId}.png")) {
-            $renderType = $type === 'combo' ? RenderType::COMBO : RenderType::AVATAR;
+        $key = "skins/{$type}/{$skin->file}";
 
-            SkinAPI::makeAvatarWithTypeForUser($renderType, $userId);
+        if (! $disk->exists($key)) {
+            $skinPath = $skin->getDisk()->path($skin->getPath());
+            AvatarRenderer::render($renderType, $skinPath, $skin->file, $skin->slim);
         }
 
-        return Storage::disk('public')->response("{$type}/{$userId}.png", "{$type}.png", [
+        return $disk->response($key, "{$type}.png", [
             'Content-Type' => 'image/png',
+            'Cache-Control' => 'no-cache',
         ]);
     }
 
+    /**
+     * Upload a skin via API token.
+     */
     public function updateSkin(Request $request)
     {
         $this->validate($request, [
@@ -100,35 +111,41 @@ class ApiController extends Controller
             return response()->json(['status' => false, 'error' => 'Invalid token'], 403);
         }
 
-        $request->file('skin')->storeAs('skins', $user->id.'.png', 'public');
+        $file = $request->file('skin');
+
+        Skin::firstOrNew(['user_id' => $user->id])->fill([
+            'sha256' => hash_file('sha256', $file->getPathname()),
+            'slim' => AvatarRenderer::isSlimSkin($file->getPathname()),
+        ])->storeImage($file, save: true);
 
         return response()->json(['status' => 'success']);
     }
 
     /**
-     * Return the original cape of the user.
+     * Return the original cape PNG for a user.
      */
     public function cape(string $user)
     {
         abort_if(! setting('skin.capes.enable', false), 404);
 
         $userId = is_numeric($user) ? (int) $user : User::where('name', $user)->value('id');
+        $cape = $userId ? Cape::forUser($userId) : null;
 
-        if ($userId === null || ! Storage::disk('public')->exists("skins/capes/{$userId}.png")) {
+        if ($cape === null) {
             return response()->json([
                 'error' => 'Not found',
                 'message' => "No cape for user with identifier: {$user}",
             ], 404);
         }
 
-        return Storage::disk('public')->response("skins/capes/{$userId}.png", 'cape.png', [
+        return $cape->getDisk()->response($cape->getPath(), 'cape.png', [
             'Content-Type' => 'image/png',
             'Cache-Control' => 'no-cache',
         ]);
     }
 
     /**
-     * Update the cape of the user with the given token.
+     * Upload a cape via API token.
      */
     public function updateCape(Request $request)
     {
@@ -145,13 +162,17 @@ class ApiController extends Controller
             return response()->json(['status' => false, 'error' => 'Invalid token'], 403);
         }
 
-        $request->file('cape')->storeAs('skins/capes', $user->id.'.png', 'public');
+        $file = $request->file('cape');
+
+        Cape::firstOrNew(['user_id' => $user->id])->fill([
+            'sha256' => hash_file('sha256', $file->getPathname()),
+        ])->storeImage($file, save: true);
 
         return response()->json(['status' => 'success']);
     }
 
     /**
-     * Remove the skin of the user with the given token.
+     * Delete the skin of the user with the given token.
      */
     public function deleteSkin(Request $request)
     {
@@ -163,13 +184,13 @@ class ApiController extends Controller
             return response()->json(['status' => false, 'error' => 'Invalid token'], 403);
         }
 
-        Storage::disk('public')->delete('skins'.$user->id.'.png');
+        Skin::forUser($user->id)?->delete();
 
         return response()->json(['status' => 'success']);
     }
 
     /**
-     * Remove the cape of the user with the given token.
+     * Delete the cape of the user with the given token.
      */
     public function deleteCape(Request $request)
     {
@@ -183,7 +204,7 @@ class ApiController extends Controller
             return response()->json(['status' => false, 'error' => 'Invalid token'], 403);
         }
 
-        Storage::disk('public')->delete('skins/capes'.$user->id.'.png');
+        Cape::forUser($user->id)?->delete();
 
         return response()->json(['status' => 'success']);
     }

@@ -4,9 +4,11 @@ namespace Azuriom\Plugin\SkinApi\Controllers\Admin;
 
 use Azuriom\Http\Controllers\Controller;
 use Azuriom\Models\Setting;
+use Azuriom\Plugin\SkinApi\Render\AvatarRenderer;
 use Azuriom\Plugin\SkinApi\SkinAPI;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
@@ -20,7 +22,7 @@ class AdminController extends Controller
             'height' => setting('skin.height', 64),
             'scale' => setting('skin.scale', 1),
             'notFound' => setting('skin.not_found_handling'),
-            'defaultSkin' => SkinAPI::defaultSkin() ?? plugin_asset('skin-api', 'img/steve.png'),
+            'defaultSkin' => SkinAPI::defaultSkin(),
         ]);
     }
 
@@ -51,6 +53,8 @@ class AdminController extends Controller
 
         if ($request->hasFile('skin')) {
             $request->file('skin')->storeAs('skins', 'default.png', 'public');
+
+            AvatarRenderer::renderAll(Storage::disk('public')->path('skins/default.png'), 'default.png');
         }
 
         Setting::updateSettings(Arr::prependKeysWith($settings, 'skin.'));

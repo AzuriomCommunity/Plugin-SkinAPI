@@ -7,8 +7,9 @@ use Azuriom\Games\Minecraft\MinecraftOfflineGame;
 use Azuriom\Models\Permission;
 use Azuriom\Models\User;
 use Azuriom\Plugin\SkinApi\Cards\ChangeSkinCapeCard;
+use Azuriom\Plugin\SkinApi\Models\Skin;
+use Azuriom\Plugin\SkinApi\Render\AvatarRenderer;
 use Azuriom\Plugin\SkinApi\Render\RenderType;
-use Azuriom\Plugin\SkinApi\SkinAPI;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
 
@@ -20,27 +21,23 @@ class SkinApiServiceProvider extends BasePluginServiceProvider
     public function register(): void
     {
         MinecraftOfflineGame::setAvatarRetriever(function (User $user, int $size = 64) {
-            $userId = $user->id;
+            $skin = Skin::forUser($user->id);
+            $disk = Storage::disk('public');
 
-            if (! Storage::disk('public')->exists("skins/{$user->id}.png")) {
-                if (SkinAPI::defaultSkin() === null) {
-                    return plugin_asset('skin-api', 'img/face_steve.png');
-                }
-
-                $userId = 'default';
-             }
-
-            $lastModified = Storage::disk('public')->lastModified("skins/{$userId}.png");
-
-            // if the avatar does not exist or the skin is more recent than the avatar
-            if (! Storage::disk('public')->exists("face/{$userId}.png")
-                || $lastModified > Storage::disk('public')->lastModified("face/{$userId}.png")) {
-                SkinAPI::makeAvatarWithTypeForUser(RenderType::AVATAR, $userId);
+            if ($skin === null) {
+                return $disk->exists('skins/face/default.png')
+                    ? url($disk->url('skins/face/default.png'))
+                    : plugin_asset('skin-api', 'img/face_steve.png');
             }
 
-            $hash = $lastModified ? '?h='.substr($lastModified, 4) : '';
+            $faceKey = "skins/face/{$skin->file}";
 
-            return url(Storage::disk('public')->url("face/{$userId}.png{$hash}"));
+            if (! $disk->exists($faceKey)) {
+                $skinPath = $skin->getDisk()->path($skin->getPath());
+                AvatarRenderer::render(RenderType::AVATAR, $skinPath, $skin->file, $skin->slim);
+            }
+
+            return url($disk->url($faceKey).'?h='.$skin->updated_at->timestamp);
         });
     }
 
@@ -53,7 +50,7 @@ class SkinApiServiceProvider extends BasePluginServiceProvider
 
         $this->loadTranslations();
 
-        // $this->loadMigrations();
+        $this->loadMigrations();
 
         $this->registerRouteDescriptions();
 
@@ -62,8 +59,9 @@ class SkinApiServiceProvider extends BasePluginServiceProvider
         $this->registerUserNavigation();
 
         Permission::registerPermissions([
+            'skin-api.skin' => 'skin-api::admin.permissions.skin',
             'skin-api.cape' => 'skin-api::admin.permissions.cape',
-            'admin.skin-api' => 'skin-api::admin.permissions.admin',
+            'admin.skin-api' => 'skin-api::admin.permissions.manage',
         ]);
 
         View::composer('profile.index', ChangeSkinCapeCard::class);
@@ -108,6 +106,7 @@ class SkinApiServiceProvider extends BasePluginServiceProvider
             'skin' => [
                 'route' => 'skin-api.home',
                 'name' => trans('skin-api::messages.title'),
+                'permission' => 'skin-api.skin',
                 'icon' => 'bi bi-person-square',
             ],
         ];

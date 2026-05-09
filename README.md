@@ -19,7 +19,10 @@ All endpoints can optionally end with `.png`.
 Returns the skin layout of the given user.
 
 **GET** `/api/skin-api/avatars/face/{user_id|user_name}`
-Returns the avatar (face) of the give user.
+Returns the avatar (face) of the given user.
+
+**GET** `/api/skin-api/avatars/body/{user_id|user_name}`
+Returns the body of the given user.
 
 **GET** `/api/skin-api/avatars/combo/{user_id|user_name}`
 Returns the avatar, with the skin body on top, of the given user.
@@ -42,3 +45,22 @@ Returns the cape of the given user.
 | -------------- | --------- | ----------------------- |
 | `access_token` | string    | The user's access token |
 | `cape`         | image/png | The cape file           |
+
+### Profile as JSON
+
+**GET** `/api/skin-api/profile/{user_name}`
+
+Returns the JSON information for skin and cape (if present):
+```json
+{
+  "username": "Notch",
+  "skin": {
+    "url": "https://example.tld/api/skin-api/skins/Notch.png",
+    "hash": "sha256:8af144fa76c3d1c406a29bd6d187f9ceaf1522207b3de259a92b08abbc826762",
+    "slim": true,
+    "default": false,
+    "last_modified": "2010-05-06T12:50:57+00:00"
+  },
+  "cape": null
+}
+```

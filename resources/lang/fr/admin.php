@@ -25,6 +25,7 @@ return [
     ],
 
     'permissions' => [
+        'skin' => 'Ajouter un skin',
         'cape' => 'Ajouter une cape',
         'manage' => 'Gérer les paramètres des skins et capes',
     ],
